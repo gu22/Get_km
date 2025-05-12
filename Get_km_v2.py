@@ -9,9 +9,9 @@ import configparser
 
 config = configparser.ConfigParser(interpolation=None)
 config.read('Config_getkm.ini')
-api_key = config['Default']['api']
+API_KEY = config['DEFAULT']['api']
 
-
+SHEET = 0
 
 # Pegando arquivo e definindo estrutura de save
 file_table = easygui.fileopenbox()
@@ -26,17 +26,17 @@ table = pd.ExcelFile(file_table)
 table_read = pd.read_excel(file_table)
 
 # table_read.insert(loc=2,column="KM",value="")    
-table_read.insert(loc=1,column="KM",value="")    
+table_read.insert(loc=6,column="KM",value="")    
 
 
 #Preparando a estrutura para loop
-cidade_estado = table_read.Cidade_estado
-coluna_index = 0
-controlador = 0
+cidade_origem = table_read.Origem
+cidade_destino = table_read.Destino
+
 
 
 #Definindo a cidade de Origem
-origem = "LUIS EDUARDO MAGALHAES - BA"
+# origem = "LUIS EDUARDO MAGALHAES - BA"
 
 
 #Inicio do loop para capturar o KM
@@ -65,41 +65,82 @@ origem = "LUIS EDUARDO MAGALHAES - BA"
 
 datainicio = datetime.datetime.now()
 
+name_output = os.path.join(path,f"{name_base} - KM ok {extensao}")
+with pd.ExcelWriter(name_output) as writer:
+    table_read.to_excel(writer,sheet_name="KM",index=False)
 
-for cidade in cidade_estado:
+
+# def escrita_excel(file,sheet,infos):
+#     base_output = pd.read_excel(file)
+#     n_linhas = len(base_output)
+#     # if n_linhas != 0:
+#     #     n_linhas = len(base_output) - 1
+        
     
-    try:
-        destino = cidade
-        url = "https://maps.googleapis.com/maps/api/distancematrix/json?"
-        
-        r = requests.get(url + "origins="+origem+"&destinations="+destino+"&key="+api_key)
-        
-        # distancia_valor = r.json()['rows'][0]["elements"][0]["distance"]["value"]
-        
-        distancia_texto = r.json()['rows'][0]["elements"][0]["distance"]["text"]
-        
-        # tempo_valor = r.json()['rows'][0]["elements"][0]["duration"]["value"]
-        
-        # tempo_texto = r.json()['rows'][0]["elements"][0]["duration"]["text"] 
+#     base_output.loc[n_linhas] = infos
     
-        table_read.loc[coluna_index,'KM'] = distancia_texto
-        coluna_index+=1
-        controlador+=1
+#     with pd.ExcelWriter(file) as writer:
+#         base_output.to_excel(writer,sheet_name=sheet,index=False)
+
+
+def escrita_excel(name_output,index,info):
+    file = name_output
+    base_output = pd.read_excel(name_output)
+    # n_linhas = len(base_output)
+    # if n_linhas != 0:
+    #     n_linhas = len(base_output) - 1
         
-        if controlador == 50:
-            time.sleep(2)
-            controlador = 0
-        else:
+    table_read.loc[index,'KM'] = info
+    # base_output.loc[n_linhas] = infos
+    
+    with pd.ExcelWriter(file) as writer:
+        table_read.to_excel(writer,sheet_name='KM',index=False)
+        
+    # return n_linha
+
+def get_km():
+    controlador = 50
+    for index,(origem,destino) in enumerate(zip(cidade_origem,cidade_destino)):
+        
+        try:
+            # destino = cidade
+            url = "https://maps.googleapis.com/maps/api/distancematrix/json?"
+            
+            r = requests.get(url + "origins="+origem+"&destinations="+destino+"&key="+API_KEY)
+            
+            # distancia_valor = r.json()['rows'][0]["elements"][0]["distance"]["value"]
+            
+            distancia_texto = r.json()['rows'][index]["elements"][index]["distance"]["text"]
+            
+            # tempo_valor = r.json()['rows'][0]["elements"][0]["duration"]["value"]
+            
+            # tempo_texto = r.json()['rows'][0]["elements"][0]["duration"]["text"] 
+        
+            table_read.loc[index,'KM'] = distancia_texto
+            escrita_excel(name_output,index,distancia_texto)
+            # infos = table_read.loc[index,'KM'] = distancia_texto
+            
+            # coluna_index+=1
+            # controlador+=1
+            
+            if index == controlador:
+                time.sleep(2)
+                controlador = controlador+50
+            else:
+                pass
+            print(f"{destino} - ok")
+            
+            
+        except:
+            table_read.loc[index,'KM'] = "nao localizado"
+            print (f"{destino} não localizada")
+            escrita_excel(name_output,index,distancia_texto)
+            # coluna_index+=1
+            # controlador+=1
             pass
-        print(f"{destino} - ok")
-        
-    except:
-        table_read.loc[coluna_index,'KM'] = "nao localizado"
-        print (f"{cidade} não localizada")
-        coluna_index+=1
-        controlador+=1
-        pass
 
+
+get_km()
 
 
 datafim = datetime.datetime.now()
