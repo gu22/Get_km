@@ -85,16 +85,17 @@ with pd.ExcelWriter(name_output) as writer:
 
 def escrita_excel(name_output,index,info):
     file = name_output
-    base_output = pd.read_excel(name_output)
+    out_table = table_read
+    # base_output = pd.read_excel(name_output)
     # n_linhas = len(base_output)
     # if n_linhas != 0:
     #     n_linhas = len(base_output) - 1
         
-    table_read.loc[index,'KM'] = info
+    out_table.loc[index,'KM'] = info
     # base_output.loc[n_linhas] = infos
     
     with pd.ExcelWriter(file) as writer:
-        table_read.to_excel(writer,sheet_name='KM',index=False)
+        out_table.to_excel(writer,sheet_name='KM',index=False)
         
     # return n_linha
 
@@ -106,12 +107,13 @@ def get_km():
             # destino = cidade
             url = "https://maps.googleapis.com/maps/api/distancematrix/json?"
             
-            r = requests.get(url + "origins="+origem+"&destinations="+destino+"&key="+API_KEY)
             
+            r = requests.get(url + "origins="+origem+"&destinations="+destino+"&key="+API_KEY)
+            # print(url + "origins="+origem+"&destinations="+destino+"&key="+API_KEY)
             # distancia_valor = r.json()['rows'][0]["elements"][0]["distance"]["value"]
             
-            distancia_texto = r.json()['rows'][index]["elements"][index]["distance"]["text"]
-            
+            distancia_texto = r.json()['rows'][0]["elements"][0]["distance"]["text"]
+            # print(distancia_texto)
             # tempo_valor = r.json()['rows'][0]["elements"][0]["duration"]["value"]
             
             # tempo_texto = r.json()['rows'][0]["elements"][0]["duration"]["text"] 
@@ -134,7 +136,7 @@ def get_km():
         except:
             table_read.loc[index,'KM'] = "nao localizado"
             print (f"{destino} não localizada")
-            escrita_excel(name_output,index,distancia_texto)
+            escrita_excel(name_output,index,"nao localizado")
             # coluna_index+=1
             # controlador+=1
             pass
